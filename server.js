@@ -4,6 +4,29 @@ const app = express();
 app.use(express.static("public"));
 app.use(express.json());
 app.use(cors());
+const Joi = require('joi');
+
+
+const reviewSchema = Joi.object({
+    name: Joi.string().required(),
+    stars: Joi.number().integer().min(1).max(5).required(),
+    feedback: Joi.string().required(),
+    date: Joi.string().required(),
+});
+app.post('/api/reviews', (req, res) => {
+    const { error } = reviewSchema.validate(req.body);
+
+    if (error) {
+        // Send validation error response
+        return res.status(400).json({ message: error.details[0].message });
+    }
+
+    // Push valid review into the array
+    reviews.push(req.body);
+
+    // Send success response
+    res.status(201).json({ message: 'Review added successfully!' });
+});
 
 app.get("/", (req, res) =>{
     res.send("hello world");
