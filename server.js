@@ -28,14 +28,45 @@ app.post('/api/reviews', (req, res) => {
     // Push valid review into the array
     reviews.push(req.body);
 
-    // Send success response
-    res.status(201).json({ message: 'Review added successfully!' });
+    // Log updates for debugging
+    console.log("Review added:", req.body);
+    console.log("Updated reviews:", reviews);
+
+    // Send the updated list of reviews
+    res.status(201).json(reviews);
 });
 
 // GET route for retrieving all reviews
 app.get('/api/reviews', (req, res) => {
     res.status(200).json(reviews);
 });
+
+// DELETE route for deleting a review
+app.delete('/api/reviews/:id', (req, res) => {
+    const id = parseInt(req.params.id, 10); // Parse the review ID
+    if (isNaN(id) || id < 0 || id >= reviews.length) {
+        return res.status(404).json({ message: 'Review not found' });
+    }
+    reviews.splice(id, 1); // Remove the review
+    res.status(200).json(reviews); // Return the updated list
+});
+
+// PUT route for editing a review
+app.put('/api/reviews/:id', (req, res) => {
+    const id = parseInt(req.params.id, 10); // Parse the review ID
+    if (isNaN(id) || id < 0 || id >= reviews.length) {
+        return res.status(404).json({ message: 'Review not found' });
+    }
+
+    const { error } = reviewSchema.validate(req.body);
+    if (error) {
+        return res.status(400).json({ message: error.details[0].message });
+    }
+
+    reviews[id] = req.body; // Update the review
+    res.status(200).json(reviews); // Return the updated list
+});
+
 
 // Start server
 const PORT = 3000;
