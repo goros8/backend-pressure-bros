@@ -1,75 +1,80 @@
-const express = require('express');
-const Joi = require('joi');
-const cors = require('cors'); // To enable cross-origin requests if needed for local dev
-
+const express = require("express");
+const cors = require("cors");
+const Joi = require("joi");
+const mongoose = require("mongoose");
 const app = express();
-app.use(cors()); // Enable if the client is on a different origin
-app.use(express.json()); // Parse incoming JSON requests
 
-const reviews = []; // Array to store reviews
+// Middleware
+app.use(cors());
+app.use(express.json());
+app.use(express.static("public"));
 
-// Joi validation schema
+// MongoDB Connection
+mongoose
+  .connect("mongodb+srv://Wf8eIemWV9E3tf6f:Wf8eIemWV9E3tf6f@pressure-bros.jw2zc.mongodb.net/?retryWrites=true&w=majority&appName=pressure-bros")
+  .then(() => console.log("Connected to MongoDB"))
+  .catch((error) => console.error("Couldn't connect to MongoDB", error));
+
+// Data Storage (In-memory for simplicity)
+const reviews = [];
+
+// Joi Validation Schema
 const reviewSchema = Joi.object({
-    name: Joi.string().required(),
-    stars: Joi.number().integer().min(1).max(5).required(),
-    feedback: Joi.string().required(),
-    date: Joi.string().required(),
+  name: Joi.string().required(),
+  stars: Joi.number().integer().min(1).max(5).required(),
+  feedback: Joi.string().required(),
+  date: Joi.string().required(),
 });
 
-// POST route for adding a review
-app.post('/api/reviews', (req, res) => {
-    const { error } = reviewSchema.validate(req.body);
-
-    if (error) {
-        // Send validation error response
-        return res.status(400).json({ message: error.details[0].message });
-    }
-
-    // Push valid review into the array
-    reviews.push(req.body);
-
-    // Log updates for debugging
-    console.log("Review added:", req.body);
-    console.log("Updated reviews:", reviews);
-
-    // Send the updated list of reviews
-    res.status(201).json(reviews);
+// Routes
+app.get("/", (req, res) => {
+  res.sendFile(__dirname + "/index.html");
 });
 
-// GET route for retrieving all reviews
-app.get('/api/reviews', (req, res) => {
-    res.status(200).json(reviews);
+// GET: Retrieve All Reviews
+app.get("/api/reviews", (req, res) => {
+  res.status(200).json(reviews);
 });
 
-// DELETE route for deleting a review
-app.delete('/api/reviews/:id', (req, res) => {
-    const id = parseInt(req.params.id, 10); // Parse the review ID
-    if (isNaN(id) || id < 0 || id >= reviews.length) {
-        return res.status(404).json({ message: 'Review not found' });
-    }
-    reviews.splice(id, 1); // Remove the review
-    res.status(200).json(reviews); // Return the updated list
+// POST: Add a Review
+app.post("/api/reviews", (req, res) => {
+  const { error } = reviewSchema.validate(req.body);
+  if (error) {
+    return res.status(400).json({ message: error.details[0].message });
+  }
+
+  reviews.push(req.body);
+  console.log("Review added:", req.body);
+  res.status(201).json(reviews);
 });
 
-// PUT route for editing a review
-app.put('/api/reviews/:id', (req, res) => {
-    const id = parseInt(req.params.id, 10); // Parse the review ID
-    if (isNaN(id) || id < 0 || id >= reviews.length) {
-        return res.status(404).json({ message: 'Review not found' });
-    }
+// DELETE: Delete a Review by ID
+app.delete("/api/reviews/:id", (req, res) => {
+  const id = parseInt(req.params.id, 10);
+  if (isNaN(id) || id < 0 || id >= reviews.length) {
+    return res.status(404).json({ message: "Review not found" });
+  }
 
-    const { error } = reviewSchema.validate(req.body);
-    if (error) {
-        return res.status(400).json({ message: error.details[0].message });
-    }
-
-    reviews[id] = req.body; // Update the review
-    res.status(200).json(reviews); // Return the updated list
+  reviews.splice(id, 1);
+  res.status(200).json(reviews);
 });
 
+// PUT: Update a Review by ID
+app.put("/api/reviews/:id", (req, res) => {
+  const id = parseInt(req.params.id, 10);
+  if (isNaN(id) || id < 0 || id >= reviews.length) {
+    return res.status(404).json({ message: "Review not found" });
+  }
 
-// Start server
+  const { error } = reviewSchema.validate(req.body);
+  if (error) {
+    return res.status(400).json({ message: error.details[0].message });
+  }
+
+  reviews[id] = req.body;
+  res.status(200).json(reviews);
+});
+
+// Start Server
 const PORT = process.env.PORT || 3001;
-app.listen(PORT, () => {
-    console.log(`Server is running on http://localhost:${PORT}`);
-});
+app.listen(PORT, () => console.log(`Server is running on http://localhost:${PORT}`));
